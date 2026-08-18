@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [role, setRole] = useState("Siswa");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e) => {
     e.preventDefault();
     // TODO: Connect to backend database here
     console.log("Login attempt:", { role, username, password });
 
-    // Simulate successful login routing
+    // Menyimpan sesi login (sebelum ada integrasi Supabase)
+    login({ role, username });
+
+    // Redirect sesuai dengan role
     if (role === "Guru") {
       navigate("/teacher");
     } else {
@@ -75,34 +80,6 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
 
-            {/* Role Selection */}
-            <div>
-              <label className="mb-3 block text-sm font-semibold text-[#52637A]">
-                Masuk sebagai
-              </label>
-              <div className="flex rounded-xl bg-[#F5F8FC] p-1">
-                <button
-                  type="button"
-                  onClick={() => setRole("Siswa")}
-                  className={`w-1/2 rounded-lg py-2.5 text-sm font-semibold transition-all ${role === "Siswa"
-                      ? "bg-[#4285D4] text-white shadow-sm"
-                      : "text-[#718096] hover:text-[#172B4D]"
-                    }`}
-                >
-                  Siswa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("Guru")}
-                  className={`w-1/2 rounded-lg py-2.5 text-sm font-semibold transition-all ${role === "Guru"
-                      ? "bg-[#4285D4] text-white shadow-sm"
-                      : "text-[#718096] hover:text-[#172B4D]"
-                    }`}
-                >
-                  Guru
-                </button>
-              </div>
-            </div>
 
             {/* Email / Username */}
             <div>
