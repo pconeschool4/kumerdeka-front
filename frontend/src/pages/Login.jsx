@@ -11,6 +11,7 @@ import {
   Target,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [role, setRole] = useState("Siswa");
@@ -19,6 +20,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // ==============================
   // LOGIN FUNCTION
@@ -32,6 +34,10 @@ export default function Login() {
       password,
     });
 
+    // Menyimpan sesi login (sebelum ada integrasi Supabase)
+    login({ role, username });
+
+    // Redirect sesuai dengan role
     if (role === "Guru") {
       navigate("/teacher");
     } else {
@@ -225,6 +231,7 @@ export default function Login() {
           {/* =====================================================
               LEFT CONTENT
           ====================================================== */}
+
 
           <div
             className="
@@ -434,6 +441,7 @@ export default function Login() {
               </div>
 
             </div>
+
 
             {/* Floating Target */}
             <div
@@ -903,6 +911,30 @@ export default function Login() {
 
           </div>
 
+          <p className="mt-8 text-center text-xs font-medium text-[#8B9AB0]">
+            Aman - Sederhana - Fokus pada perkembangan
+          </p>
+
+          {/* Temporary Dev Mode Role Switcher */}
+          <div className="mt-6 border-t border-[#F0F3F8] pt-4 text-center">
+            <p className="mb-2 text-xs text-[#A0AEC0]">-- Developer Mode --</p>
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("Siswa")}
+                className={`rounded px-3 py-1 text-xs transition ${role === "Siswa" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
+              >
+                Role: Siswa
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("Guru")}
+                className={`rounded px-3 py-1 text-xs transition ${role === "Guru" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
+              >
+                Role: Guru
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
