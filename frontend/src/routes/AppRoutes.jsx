@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Login';
+import Register from '../pages/Register';
+import VerifyEmail from '../pages/VerifyEmail';
 import Dashboard from '../pages/Dashboard';
 import TeacherDashboard from '../pages/TeacherDashboard';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -29,9 +31,10 @@ export default function AppRoutes() {
 
   return (
     <Routes>
-      {/* Public Route */}
+      {/* Public Routes */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route 
-        path="/" 
+        path="/login" 
         element={
           user ? (
             <Navigate to={user.role === 'Guru' ? '/teacher' : '/student'} replace />
@@ -40,6 +43,17 @@ export default function AppRoutes() {
           )
         } 
       />
+      <Route 
+        path="/register" 
+        element={
+          user ? (
+            <Navigate to={user.role === 'Guru' ? '/teacher' : '/student'} replace />
+          ) : (
+            <Register />
+          )
+        } 
+      />
+      <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* Protected Routes for Siswa */}
       <Route element={<ProtectedRoute allowedRoles={['Siswa']} />}>

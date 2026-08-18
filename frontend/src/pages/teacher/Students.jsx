@@ -1,18 +1,35 @@
-import { useState } from 'react';
-import { Search, User, Filter, MoreVertical, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, User, Filter, MoreVertical, Eye, Loader2 } from 'lucide-react';
 import TeacherLayout from '../../Layouts/TeacherLayout';
-
-// Dummy data structure mirroring Supabase data_siswa
-const DUMMY_STUDENTS = [
-  { id: 1, name: 'Andi Saputra', class: '7A', status: 'Aktif', adaptiveMode: false },
-  { id: 2, name: 'Budi Raharjo', class: '7A', status: 'Aktif', adaptiveMode: true },
-  { id: 3, name: 'Citra Lestari', class: '7B', status: 'Aktif', adaptiveMode: false },
-  { id: 4, name: 'Dewi Sartika', class: '7B', status: 'Non-Aktif', adaptiveMode: false },
-];
+import { supabase } from '../../lib/supabaseClient';
 
 export default function TeacherStudents() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('data_siswa')
+        .select('*')
+        .order('nama', { ascending: true });
+
+      if (error) throw error;
+      setStudents(data || []);
+    } catch (error) {
+      console.error("Error fetching students:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <TeacherLayout>
@@ -53,68 +70,71 @@ export default function TeacherStudents() {
 
         {/* Students List */}
         <div className="overflow-hidden rounded-3xl bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#F8FAFC] text-xs font-semibold uppercase text-[#718096]">
-                <tr>
-                  <th className="px-6 py-4">Nama Siswa</th>
-                  <th className="px-6 py-4">Kelas</th>
-                  <th className="px-6 py-4">Status Mode Adaptif</th>
-                  <th className="px-6 py-4">Status Akun</th>
-                  <th className="px-6 py-4 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F0F3F8]">
-                {DUMMY_STUDENTS.map((student) => (
-                  <tr key={student.id} className="transition hover:bg-[#F5F8FC]/50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF4FF] text-[#4285D4]">
-                          <User size={18} />
+          {loading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-[#4285D4]" />
+            </div>
+          ) : students.length === 0 ? (
+            <div className="flex h-40 flex-col items-center justify-center text-[#718096]">
+              <User size={40} className="mb-2 text-[#A0AEC0]" />
+              <p>Belum ada data siswa.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[#F8FAFC] text-xs font-semibold uppercase text-[#718096]">
+                  <tr>
+                    <th className="px-6 py-4">Nama Siswa</th>
+                    <th className="px-6 py-4">Kelas</th>
+                    <th className="px-6 py-4">Status Mode Adaptif</th>
+                    <th className="px-6 py-4">Status Akun</th>
+                    <th className="px-6 py-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F0F3F8]">
+                  {students.map((student) => (
+                    <tr key={student.id} className="transition hover:bg-[#F5F8FC]/50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAF4FF] text-[#4285D4]">
+                            <User size={18} />
+                          </div>
+                          <p className="font-bold text-[#172B4D]">{student.nama}</p>
                         </div>
-                        <p className="font-bold text-[#172B4D]">{student.name}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-[#718096] whitespace-nowrap">
-                      Kelas {student.class}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {student.adaptiveMode ? (
-                        <span className="inline-flex rounded-full bg-[#FFF9E6] px-3 py-1 text-xs font-bold text-[#D69E2E]">
-                          Sedang Intervensi
-                        </span>
-                      ) : (
+                      </td>
+                      <td className="px-6 py-4 font-medium text-[#718096] whitespace-nowrap">
+                        {student.kelas ? `Kelas ${student.kelas}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex rounded-full bg-[#F0F3F8] px-3 py-1 text-xs font-bold text-[#718096]">
                           Normal
                         </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                        student.status === 'Aktif' ? 'bg-[#EEF8F1] text-[#4B8B60]' : 'bg-[#FFF5F5] text-[#E53E3E]'
-                      }`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => { setSelectedStudent(student); setShowProfileModal(true); }}
-                          className="rounded-lg p-2 text-[#718096] transition hover:bg-[#F5F8FC] hover:text-[#4285D4]" 
-                          title="Lihat Profil"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button className="rounded-lg p-2 text-[#718096] transition hover:bg-[#F5F8FC] hover:text-[#172B4D]" title="Opsi Lainnya">
-                          <MoreVertical size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold bg-[#EEF8F1] text-[#4B8B60]">
+                          Aktif
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => { setSelectedStudent(student); setShowProfileModal(true); }}
+                            className="rounded-lg p-2 text-[#718096] transition hover:bg-[#F5F8FC] hover:text-[#4285D4]" 
+                            title="Lihat Profil"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button className="rounded-lg p-2 text-[#718096] transition hover:bg-[#F5F8FC] hover:text-[#172B4D]" title="Opsi Lainnya">
+                            <MoreVertical size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Profile Modal */}
@@ -123,20 +143,21 @@ export default function TeacherStudents() {
             <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl md:p-8">
               <div className="mb-6 flex flex-col items-center text-center">
                 <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#EAF4FF] text-3xl font-bold text-[#4285D4]">
-                  {selectedStudent.name.charAt(0)}
+                  {selectedStudent.nama.charAt(0)}
                 </div>
-                <h2 className="text-xl font-bold text-[#172B4D]">{selectedStudent.name}</h2>
-                <p className="text-sm font-medium text-[#718096]">Kelas {selectedStudent.class}</p>
+                <h2 className="text-xl font-bold text-[#172B4D]">{selectedStudent.nama}</h2>
+                <p className="text-sm font-medium text-[#718096]">{selectedStudent.kelas ? `Kelas ${selectedStudent.kelas}` : 'Belum ada kelas'}</p>
+                <p className="mt-2 text-xs text-[#718096]">{selectedStudent.bio || '-'}</p>
               </div>
               
               <div className="mb-6 space-y-3 rounded-2xl bg-[#F8FAFC] p-4">
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-[#718096]">Status Akun:</span>
-                  <span className="text-sm font-bold text-[#172B4D]">{selectedStudent.status}</span>
+                  <span className="text-sm font-bold text-[#172B4D]">Aktif</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-[#718096]">Mode Adaptif:</span>
-                  <span className="text-sm font-bold text-[#172B4D]">{selectedStudent.adaptiveMode ? 'Sedang Intervensi' : 'Normal'}</span>
+                  <span className="text-sm font-bold text-[#172B4D]">Normal</span>
                 </div>
               </div>
 
