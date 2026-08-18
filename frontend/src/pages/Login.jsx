@@ -130,6 +130,27 @@ export default function Login() {
           <p className="mt-8 text-center text-xs font-medium text-[#8B9AB0]">
             Aman - Sederhana - Fokus pada perkembangan
           </p>
+
+          {/* Temporary Dev Mode Role Switcher */}
+          <div className="mt-6 border-t border-[#F0F3F8] pt-4 text-center">
+            <p className="mb-2 text-xs text-[#A0AEC0]">-- Developer Mode --</p>
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRole("Siswa")}
+                className={`rounded px-3 py-1 text-xs transition ${role === "Siswa" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
+              >
+                Role: Siswa
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("Guru")}
+                className={`rounded px-3 py-1 text-xs transition ${role === "Guru" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
+              >
+                Role: Guru
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
