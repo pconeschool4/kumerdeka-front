@@ -73,7 +73,8 @@ export default function Login() {
           className="
             relative
             flex
-            min-h-[680px]
+            min-h-[550px]
+            md:min-h-[680px]
             w-full
             max-w-[1200px]
             overflow-hidden
@@ -865,8 +866,7 @@ export default function Login() {
                         group-hover:translate-x-full
                       "
                     />
-
-                    <span className="relative z-10">
+                      <span className="relative z-10">
                       LOGIN
                     </span>
 
@@ -874,6 +874,27 @@ export default function Login() {
 
                 </form>
 
+              </div>
+
+              {/* Temporary Dev Mode Role Switcher */}
+              <div className="mt-6 border-t border-white/20 pt-4 text-center">
+                <p className="mb-2 text-[10px] text-white/60">-- Developer Mode --</p>
+                <div className="flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole("Siswa")}
+                    className={`rounded px-3 py-1 text-[10px] transition ${role === "Siswa" ? "bg-white/30 font-bold text-white" : "text-white/60 hover:bg-white/10"}`}
+                  >
+                    Role: Siswa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("Guru")}
+                    className={`rounded px-3 py-1 text-[10px] transition ${role === "Guru" ? "bg-white/30 font-bold text-white" : "text-white/60 hover:bg-white/10"}`}
+                  >
+                    Role: Guru
+                  </button>
+                </div>
               </div>
 
               {/* =================================================
@@ -911,30 +932,6 @@ export default function Login() {
 
           </div>
 
-          <p className="mt-8 text-center text-xs font-medium text-[#8B9AB0]">
-            Aman - Sederhana - Fokus pada perkembangan
-          </p>
-
-          {/* Temporary Dev Mode Role Switcher */}
-          <div className="mt-6 border-t border-[#F0F3F8] pt-4 text-center">
-            <p className="mb-2 text-xs text-[#A0AEC0]">-- Developer Mode --</p>
-            <div className="flex justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setRole("Siswa")}
-                className={`rounded px-3 py-1 text-xs transition ${role === "Siswa" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
-              >
-                Role: Siswa
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole("Guru")}
-                className={`rounded px-3 py-1 text-xs transition ${role === "Guru" ? "bg-gray-200 font-bold" : "text-gray-500"}`}
-              >
-                Role: Guru
-              </button>
-            </div>
-          </div>
         </div>
 
       </div>

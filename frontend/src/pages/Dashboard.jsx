@@ -14,7 +14,7 @@ import StudentLayout from "../layouts/StudentLayout";
 
 export default function Dashboard() {
   return (
-    <StudentLayout>
+    <StudentLayout noPadding={true}>
       {/* =========================================================
           DASHBOARD BACKGROUND
       ========================================================== */}
