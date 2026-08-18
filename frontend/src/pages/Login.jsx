@@ -874,6 +874,51 @@ export default function Login() {
 
                 </form>
 
+                {/* =================================================
+                    GOOGLE OAUTH BUTTON
+                ================================================== */}
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="w-1/5 border-b border-white/20 lg:w-1/4"></span>
+                  <p className="text-center text-[10px] font-semibold uppercase text-white/70">
+                    Atau masuk dengan
+                  </p>
+                  <span className="w-1/5 border-b border-white/20 lg:w-1/4"></span>
+                </div>
+
+                <button
+                  type="button"
+                  className="
+                    mt-4
+                    flex
+                    h-12
+                    w-full
+                    items-center
+                    justify-center
+                    gap-3
+                    rounded-full
+                    border
+                    border-white/40
+                    bg-white/20
+                    text-sm
+                    font-bold
+                    text-white
+                    shadow-sm
+                    backdrop-blur-md
+                    transition-all
+                    duration-300
+                    hover:-translate-y-1
+                    hover:bg-white/30
+                    hover:shadow-md
+                  "
+                >
+                  <img
+                    src="https://www.svgrepo.com/show/475656/google-color.svg"
+                    alt="Google Logo"
+                    className="h-5 w-5"
+                  />
+                  Google
+                </button>
+
               </div>
 
               {/* Temporary Dev Mode Role Switcher */}
