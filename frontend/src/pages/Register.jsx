@@ -34,12 +34,12 @@ export default function Register() {
 
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
           data: {
-            full_name: fullName,
-            username: username
+            full_name: fullName.trim(),
+            username: username.trim()
           }
         }
       });

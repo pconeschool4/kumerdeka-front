@@ -233,7 +233,7 @@ export default function TeacherSubjects() {
                     </div>
                     
                     <div className="space-y-4">
-                      {sub.cp.map((itemCp) => (
+                      {(sub.cp || []).map((itemCp) => (
                         <div key={itemCp.id} className="rounded-2xl border border-[#E2E8F0] bg-white">
                           {/* CP Header */}
                           <div 

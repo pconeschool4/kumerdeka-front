@@ -37,7 +37,7 @@ export default function AppRoutes() {
         path="/login" 
         element={
           user ? (
-            <Navigate to={user.role === 'Guru' ? '/teacher' : '/student'} replace />
+            <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />
           ) : (
             <Login />
           )
@@ -47,7 +47,7 @@ export default function AppRoutes() {
         path="/register" 
         element={
           user ? (
-            <Navigate to={user.role === 'Guru' ? '/teacher' : '/student'} replace />
+            <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />
           ) : (
             <Register />
           )
@@ -56,7 +56,7 @@ export default function AppRoutes() {
       <Route path="/verify-email" element={<VerifyEmail />} />
 
       {/* Protected Routes for Siswa */}
-      <Route element={<ProtectedRoute allowedRoles={['Siswa']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['student']} />}>
         <Route path="/student" element={<Dashboard />} />
         <Route path="/student/materials" element={<StudentMaterials />} />
         <Route path="/student/quiz" element={<StudentQuiz />} />
@@ -65,7 +65,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Protected Routes for Guru */}
-      <Route element={<ProtectedRoute allowedRoles={['Guru']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['teacher']} />}>
         <Route path="/teacher" element={<TeacherDashboard />} />
         <Route path="/teacher/students" element={<TeacherStudents />} />
         <Route path="/teacher/subjects" element={<TeacherSubjects />} />

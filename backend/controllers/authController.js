@@ -5,9 +5,9 @@ const syncUser = async (req, res) => {
     const user = req.user; // From verifyToken middleware
     const email = user.email;
 
-    // 1. Check if user already exists in profiles
+    // 1. Check if user already exists in users
     const { data: existingProfile, error: profileError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*')
       .eq('id', user.id)
       .single();
@@ -16,54 +16,57 @@ const syncUser = async (req, res) => {
       return res.json({ message: 'Profile already synced', profile: existingProfile });
     }
 
-    // 2. Check if email is in teacher_whitelist
-    let role = 'Siswa';
+    // 2. Check if email is in data_guru
+    let role = 'student'; 
     
-    // We assume there's a table 'teacher_whitelist' with column 'email'
-    const { data: whitelistData, error: whitelistError } = await supabase
-      .from('teacher_whitelist')
-      .select('email')
+    const { data: guruData, error: guruError } = await supabase
+      .from('data_guru')
+      .select('id, email')
       .eq('email', email)
       .single();
 
-    if (whitelistData) {
-      role = 'Guru';
+    if (guruData) {
+      role = 'teacher';
     }
 
-    // 3. Create new profile
+    // 3. Create new profile in users
     const newProfile = {
       id: user.id,
       email: email,
       role: role,
       username: user.user_metadata?.username || email.split('@')[0],
-      full_name: user.user_metadata?.full_name || 'Pengguna Baru',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
     const { data: insertedProfile, error: insertError } = await supabase
-      .from('profiles')
+      .from('users')
       .insert([newProfile])
       .select()
       .single();
 
     if (insertError) {
-      console.error("Insert Profile Error:", insertError);
-      return res.status(500).json({ error: 'Failed to create profile' });
+      console.error("Insert Users Error:", insertError);
+      return res.status(500).json({ error: 'Failed to create user profile' });
     }
 
-    // 4. Insert into data_siswa or data_guru based on ERD
-    if (role === 'Guru') {
-      await supabase.from('data_guru').insert([{
-        user_id: user.id,
-        nama: newProfile.full_name,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }]);
+    // 4. Update data_guru or Insert into data_siswa
+    const userFullName = user.user_metadata?.full_name || 'Pengguna Baru';
+
+    if (role === 'teacher') {
+      // Karena email sudah ada di data_guru, kita tinggal update user_id dan nama-nya
+      await supabase.from('data_guru')
+        .update({
+          user_id: user.id,
+          nama: userFullName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', guruData.id);
     } else {
+      // Jika bukan guru, otomatis jadi siswa
       await supabase.from('data_siswa').insert([{
         user_id: user.id,
-        nama: newProfile.full_name,
+        nama: userFullName,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }]);

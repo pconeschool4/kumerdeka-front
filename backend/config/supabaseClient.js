@@ -8,6 +8,14 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn("WARNING: Supabase URL or Anon Key is missing in .env");
 }
 
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
+const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseKey || 'placeholder-key',
+  {
+    db: {
+      schema: 'kumerdeka_base'
+    }
+  }
+);
 
 module.exports = supabase;

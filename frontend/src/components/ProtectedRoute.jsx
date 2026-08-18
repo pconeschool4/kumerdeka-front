@@ -16,7 +16,7 @@ export default function ProtectedRoute({ allowedRoles }) {
   // Jika role user tidak sesuai dengan role yang diizinkan untuk rute ini
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect ke dashboard yang sesuai dengan rolenya
-    if (user.role === 'Guru') {
+    if (user.role === 'teacher') {
       return <Navigate to="/teacher" replace />;
     } else {
       return <Navigate to="/student" replace />;
