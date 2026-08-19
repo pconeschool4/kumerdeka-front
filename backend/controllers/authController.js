@@ -10,7 +10,7 @@ const syncUser = async (req, res) => {
       .from('users')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existingProfile) {
       return res.json({ message: 'Profile already synced', profile: existingProfile });
@@ -23,7 +23,7 @@ const syncUser = async (req, res) => {
       .from('data_guru')
       .select('id, email')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (guruData) {
       role = 'teacher';

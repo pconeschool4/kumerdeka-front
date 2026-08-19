@@ -93,7 +93,7 @@ export default function VerifyEmail() {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               required
-              className="h-[64px] w-full rounded-full border border-white/40 bg-[#A9E3F5]/65 text-center text-2xl font-bold tracking-[0.5em] text-[#31566D] outline-none backdrop-blur-md transition-all focus:bg-[#C0EDF8]/85 focus:border-white focus:ring-4 focus:ring-[#7DD3EC]/25"
+              className="h-[64px] w-full rounded-full border border-white/10 bg-[#A9E3F5]/65 text-center text-2xl font-bold tracking-[0.5em] text-[#31566D] outline-none backdrop-blur-md transition-all focus:bg-[#C0EDF8]/85 focus:border-white focus:ring-4 focus:ring-[#7DD3EC]/25"
             />
           </div>
         </div>

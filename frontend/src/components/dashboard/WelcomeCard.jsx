@@ -17,12 +17,12 @@ export default function WelcomeCard() {
           perhatianmu.
         </p>
 
-        <button className="mt-5 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600">
+        <button className="mt-5 rounded-xl bg-blue-500 px-5 py-3 text-sm font-semibold text-slate-900 dark:text-white shadow-sm transition hover:bg-blue-600">
           Mulai Latihan →
         </button>
       </div>
 
-      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/50" />
+      <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-slate-50 dark:bg-white/50" />
       <div className="absolute -bottom-16 right-20 h-32 w-32 rounded-full bg-blue-100/60" />
 
     </section>

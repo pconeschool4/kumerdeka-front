@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
         await syncProfile(session);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -64,9 +64,9 @@ export function AuthProvider({ children }) {
       });
 
       // Redirect ke dashboard yang sesuai (hanya jika pengguna sedang berada di rute autentikasi)
-      const publicRoutes = ['/login', '/register', '/verify-email', '/'];
+      const publicRoutes = ['/login', '/register', '/verify-email', '/', '/admin/guru'];
       if (publicRoutes.includes(location.pathname)) {
-        if (data.profile.role === 'Guru') {
+        if (data.profile.role === 'teacher') {
           navigate('/teacher');
         } else {
           navigate('/student');

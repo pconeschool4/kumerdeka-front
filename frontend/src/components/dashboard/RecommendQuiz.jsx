@@ -50,7 +50,7 @@ export default function RecommendedQuiz() {
           </span>
         </div>
 
-        <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4285D4] py-3 text-sm font-semibold text-white transition hover:bg-[#3477C7]">
+        <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-[#4285D4] py-3 text-sm font-semibold text-slate-900 dark:text-white transition hover:bg-[#3477C7]">
           Mulai
           <ArrowRight size={15} />
         </button>

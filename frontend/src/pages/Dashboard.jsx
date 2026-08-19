@@ -8,23 +8,145 @@ import {
   ChevronRight,
   ArrowUpRight,
   CheckCircle2,
+  Loader2,
+  PlayCircle
 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
+import { useStudentData } from "../hooks/useStudentData";
 
-import StudentLayout from "../layouts/StudentLayout";
+import StudentLayout from "../Layouts/StudentLayout";
 
 export default function Dashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const { loading: pageLoading, siswaId, stats, availableQuizzes, refetch } = useStudentData(user);
+  // OLD STATES REMOVED BY REFACTOR
+  
+  
+  
+  const navigate = useNavigate();
+
+  
+
+  const fetchStudentData = async () => {
+    try {
+      const { data: siswaData } = await supabase
+        .from('data_siswa')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+        
+      if (siswaData) {
+        setSiswaId(siswaData.id);
+        fetchStats(siswaData.id);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchStats = async (id) => {
+    try {
+      const { data, error } = await supabase
+        .from('hasil_kuis')
+        .select('id, nilai, finished_at, kuis(deskripsi, subjects(nama))')
+        .eq('siswa_id', id)
+        .order('finished_at', { ascending: false });
+
+      if (!error && data) {
+        const total = data.length;
+        const avg = total > 0 ? Math.round(data.reduce((a, b) => a + (b.nilai || 0), 0) / total) : 0;
+        
+        // Hitung area yang perlu diperkuat
+        const subjectScores = {};
+        data.forEach(item => {
+          const subject = item.kuis?.subjects?.nama;
+          if (subject) {
+            if (!subjectScores[subject]) subjectScores[subject] = { total: 0, count: 0 };
+            subjectScores[subject].total += item.nilai || 0;
+            subjectScores[subject].count += 1;
+          }
+        });
+        
+        let weakestSubject = null;
+        let lowestScore = 101;
+        Object.keys(subjectScores).forEach(sub => {
+          const subAvg = subjectScores[sub].total / subjectScores[sub].count;
+          if (subAvg < lowestScore) {
+            lowestScore = subAvg;
+            weakestSubject = sub;
+          }
+        });
+
+        setStats({
+          mastery: avg,
+          totalQuizzes: total,
+          recentHistory: data.slice(0, 5), // Ambil 5 kuis terakhir
+          weakestSubject: weakestSubject
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchQuizzes = async () => {
+    try {
+      // Fetch available quizzes with subject name
+      const { data, error } = await supabase
+        .from('kuis')
+        .select(`
+          id, deskripsi, durasi, kesulitan,
+          subjects (nama)
+        `)
+        .order('id', { ascending: false });
+        
+      if (!error && data) {
+        setAvailableQuizzes(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getDisplayName = () => {
+    if (!user) return 'Siswa';
+    
+    if (user.user_metadata?.username) return user.user_metadata.username;
+    if (user.user_metadata?.full_name) return user.user_metadata.full_name;
+    
+    if (user.email) {
+      return user.email.split('@')[0];
+    }
+    
+    return 'Siswa';
+  };
+
+  if (authLoading || pageLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#0B1120]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-[#4285D4]" />
+          <p className="text-sm font-semibold text-slate-500 dark:text-[#94A3B8]">Memuat Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <StudentLayout noPadding={true}>
       {/* =========================================================
           DASHBOARD BACKGROUND
       ========================================================== */}
 
-      <div className="relative min-h-screen overflow-hidden bg-[#EDF9FC]">
+      <div className="relative min-h-screen overflow-hidden bg-transparent">
 
         {/* Background */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
-          <div className="absolute inset-0 bg-gradient-to-br from-[#DDF5FA] via-[#F5FBFD] to-[#F1EEFA]" />
+          <div className="absolute inset-0 bg-transparent" />
 
           {/* Blue glow */}
           <div
@@ -35,7 +157,7 @@ export default function Dashboard() {
               h-[520px]
               w-[520px]
               rounded-full
-              bg-[#82D9EB]/25
+              bg-[#1E3A8A]/30
               blur-[130px]
             "
           />
@@ -49,7 +171,7 @@ export default function Dashboard() {
               h-[520px]
               w-[520px]
               rounded-full
-              bg-[#B3A0E8]/15
+              bg-[#F59E0B]/15
               blur-[130px]
             "
           />
@@ -63,7 +185,7 @@ export default function Dashboard() {
               h-[500px]
               w-[500px]
               rounded-full
-              bg-white/70
+              bg-slate-50 dark:bg-white/5
               blur-[130px]
             "
           />
@@ -96,8 +218,8 @@ export default function Dashboard() {
                     gap-2
                     rounded-full
                     border
-                    border-white/80
-                    bg-white/55
+                    border-slate-200 dark:border-white/10
+                    bg-white dark:bg-white dark:bg-[#0F172A]/60
                     px-3.5
                     py-2
                     shadow-[0_8px_25px_rgba(67,145,170,0.08)]
@@ -110,7 +232,7 @@ export default function Dashboard() {
                     className="text-[#4AAFC8]"
                   />
 
-                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#527F90]">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-[#94A3B8]">
                     Dashboard Belajar
                   </span>
                 </div>
@@ -121,14 +243,15 @@ export default function Dashboard() {
                     font-extrabold
                     leading-tight
                     tracking-[-1.2px]
-                    text-[#174A66]
+                    text-slate-900 dark:text-white
                     sm:text-[36px]
+                    capitalize
                   "
                 >
-                  Hai, Naya! 👋
+                  Hai, {getDisplayName()}! 👋
                 </h1>
 
-                <p className="mt-2 text-sm text-[#728C9B]">
+                <p className="mt-2 text-sm text-slate-500 dark:text-[#94A3B8]">
                   Yuk lanjutkan progres belajarmu hari ini.
                 </p>
 
@@ -145,8 +268,8 @@ export default function Dashboard() {
                   gap-3
                   rounded-[20px]
                   border
-                  border-white/80
-                  bg-white/55
+                  border-slate-200 dark:border-white/10
+                  bg-white dark:bg-white dark:bg-[#0F172A]/60
                   px-4
                   py-3
                   shadow-[0_10px_30px_rgba(65,130,150,0.09)]
@@ -154,7 +277,7 @@ export default function Dashboard() {
                   transition-all
                   duration-300
                   hover:-translate-y-1
-                  hover:bg-white/75
+                  hover:bg-slate-50 dark:bg-white/5
                   hover:shadow-[0_15px_35px_rgba(65,130,150,0.13)]
                 "
               >
@@ -167,7 +290,7 @@ export default function Dashboard() {
                     items-center
                     justify-center
                     rounded-[14px]
-                    bg-[#FFF1C7]
+                    bg-[#F59E0B]/20
                     shadow-sm
                   "
                 >
@@ -180,12 +303,12 @@ export default function Dashboard() {
 
                 <div>
 
-                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#A3883B]">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#F59E0B]">
                     Learning Streak
                   </p>
 
-                  <p className="mt-0.5 text-sm font-bold text-[#80691F]">
-                    7 hari berturut-turut
+                  <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">
+                    0 hari berturut-turut
                   </p>
 
                 </div>
@@ -213,15 +336,15 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[26px]
                 border
-                border-white/80
-                bg-white/55
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-6
                 shadow-[0_12px_35px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:bg-white/70
+                hover:bg-slate-50 dark:bg-white/5
                 hover:shadow-[0_18px_45px_rgba(63,130,155,0.13)]
               "
             >
@@ -237,7 +360,7 @@ export default function Dashboard() {
                   h-36
                   w-36
                   rounded-full
-                  bg-[#82D8EA]/20
+                  bg-[#38BDF8]/20
                   blur-3xl
                   transition-transform
                   duration-500
@@ -258,8 +381,8 @@ export default function Dashboard() {
                       justify-center
                       rounded-[14px]
                       border
-                      border-[#C7EDF4]
-                      bg-[#E8F9FC]
+                      border-slate-200 dark:border-white/10
+                      bg-slate-50 dark:bg-white/5
                       text-[#45A9C1]
                     "
                   >
@@ -279,22 +402,22 @@ export default function Dashboard() {
                       text-[#4C9769]
                     "
                   >
-                    +6%
+                    +5%
                   </span>
 
                 </div>
 
-                <p className="mt-6 text-xs font-semibold text-[#78919F]">
+                <p className="mt-6 text-xs font-semibold text-slate-500 dark:text-[#94A3B8]">
                   Mastery keseluruhan
                 </p>
 
                 <div className="mt-1 flex items-end gap-2">
 
-                  <h2 className="text-[38px] font-extrabold tracking-[-1px] text-[#174A66]">
-                    78%
+                  <h2 className="text-[38px] font-extrabold tracking-[-1px] text-slate-900 dark:text-white">
+                    {stats.mastery}%
                   </h2>
 
-                  <span className="mb-1 text-xs text-[#8398A3]">
+                  <span className="mb-1 text-xs text-slate-400 dark:text-[#64748B]">
                     minggu ini
                   </span>
 
@@ -302,26 +425,25 @@ export default function Dashboard() {
 
                 {/* Progress */}
 
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#DFF2F6]">
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
 
                   <div
                     className="
                       h-full
-                      w-[78%]
                       rounded-full
                       bg-gradient-to-r
                       from-[#78D5E8]
                       to-[#52B8D2]
                       transition-all
                       duration-700
-                      group-hover:w-[82%]
                     "
+                    style={{ width: `${stats.mastery}%` }}
                   />
 
                 </div>
 
-                <p className="mt-3 text-xs text-[#7B929E]">
-                  Naik 6% dari minggu lalu
+                <p className="mt-3 text-xs text-slate-400 dark:text-[#64748B]">
+                  Belum ada data minggu lalu
                 </p>
 
               </div>
@@ -339,15 +461,15 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[26px]
                 border
-                border-white/80
-                bg-white/55
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-6
                 shadow-[0_12px_35px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:bg-white/70
+                hover:bg-slate-50 dark:bg-white/5
                 hover:shadow-[0_18px_45px_rgba(63,130,155,0.13)]
               "
             >
@@ -361,7 +483,7 @@ export default function Dashboard() {
                   h-36
                   w-36
                   rounded-full
-                  bg-[#A998E5]/15
+                  bg-[#818CF8]/20
                   blur-3xl
                   transition-transform
                   duration-500
@@ -396,17 +518,17 @@ export default function Dashboard() {
 
                 </div>
 
-                <p className="mt-6 text-xs font-semibold text-[#78919F]">
+                <p className="mt-6 text-xs font-semibold text-slate-500 dark:text-[#94A3B8]">
                   Aktivitas quiz
                 </p>
 
                 <div className="mt-1 flex items-end gap-2">
 
-                  <h2 className="text-[38px] font-extrabold tracking-[-1px] text-[#174A66]">
-                    12
+                  <h2 className="text-[38px] font-extrabold tracking-[-1px] text-slate-900 dark:text-white">
+                    {stats.totalQuizzes}
                   </h2>
 
-                  <span className="mb-1 text-xs text-[#8398A3]">
+                  <span className="mb-1 text-xs text-slate-400 dark:text-[#64748B]">
                     quiz selesai
                   </span>
 
@@ -414,28 +536,30 @@ export default function Dashboard() {
 
                 <div className="mt-5 flex items-center gap-2">
 
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#EEEAF9]">
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
 
                     <div
                       className="
                         h-full
-                        w-[84%]
                         rounded-full
                         bg-gradient-to-r
                         from-[#A596E4]
                         to-[#806ACD]
+                        transition-all
+                        duration-700
                       "
+                      style={{ width: `${stats.mastery}%` }}
                     />
 
                   </div>
 
                   <span className="text-[11px] font-bold text-[#7660BC]">
-                    84%
+                    {stats.mastery}%
                   </span>
 
                 </div>
 
-                <p className="mt-3 text-xs text-[#7B929E]">
+                <p className="mt-3 text-xs text-slate-400 dark:text-[#64748B]">
                   Rata-rata nilai quiz
                 </p>
 
@@ -454,15 +578,15 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[26px]
                 border
-                border-white/80
-                bg-white/55
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-6
                 shadow-[0_12px_35px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:bg-white/70
+                hover:bg-slate-50 dark:bg-white/5
                 hover:shadow-[0_18px_45px_rgba(63,130,155,0.13)]
               "
             >
@@ -476,7 +600,7 @@ export default function Dashboard() {
                   h-36
                   w-36
                   rounded-full
-                  bg-[#74D7EA]/20
+                  bg-[#10B981]/20
                   blur-3xl
                   transition-transform
                   duration-500
@@ -497,8 +621,8 @@ export default function Dashboard() {
                       justify-center
                       rounded-[14px]
                       border
-                      border-[#C7EDF4]
-                      bg-[#E8F9FC]
+                      border-slate-200 dark:border-white/10
+                      bg-slate-50 dark:bg-white/5
                       text-[#43AFC8]
                     "
                   >
@@ -509,8 +633,8 @@ export default function Dashboard() {
                     className="
                       rounded-full
                       border
-                      border-[#C6EAF2]
-                      bg-[#E8F9FC]
+                      border-slate-200 dark:border-white/10
+                      bg-slate-50 dark:bg-white/5
                       px-2.5
                       py-1
                       text-[10px]
@@ -523,17 +647,18 @@ export default function Dashboard() {
 
                 </div>
 
-                <p className="mt-6 text-xs font-semibold text-[#78919F]">
+                <p className="mt-6 text-xs font-semibold text-slate-500 dark:text-[#94A3B8]">
                   Area yang perlu diperkuat
                 </p>
 
-                <h2 className="mt-2 text-[19px] font-extrabold text-[#174A66]">
-                  Pemahaman Konsep
+                <h2 className="mt-2 text-[19px] font-extrabold text-slate-900 dark:text-white">
+                  {stats.weakestSubject ? stats.weakestSubject : 'Belum Ada Data'}
                 </h2>
 
-                <p className="mt-2 text-xs leading-5 text-[#7B929E]">
-                  Sistem menemukan materi yang masih perlu
-                  kamu latih.
+                <p className="mt-2 text-xs leading-5 text-slate-400 dark:text-[#64748B]">
+                  {stats.weakestSubject 
+                    ? `Perkuat pemahaman materi ${stats.weakestSubject} dengan mengulang bahan ajar.` 
+                    : 'Kerjakan kuis terlebih dahulu agar sistem dapat mendeteksi.'}
                 </p>
 
                 <button
@@ -546,13 +671,13 @@ export default function Dashboard() {
                     gap-1.5
                     rounded-xl
                     border
-                    border-[#BDE5EE]
-                    bg-[#ECFAFC]
+                    border-slate-200 dark:border-white/10
+                    bg-slate-50 dark:bg-white/5
                     px-3
                     py-2
                     text-[11px]
                     font-bold
-                    text-[#4394AA]
+                    text-[#38BDF8]
                     transition-all
                     duration-300
                     hover:border-[#8BD2E1]
@@ -574,6 +699,54 @@ export default function Dashboard() {
           </section>
 
           {/* =====================================================
+              AVAILABLE QUIZZES
+          ====================================================== */}
+          <section className="mt-9">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[14px] border border-slate-200 dark:border-white/10 bg-white dark:bg-white dark:bg-[#0F172A]/60 text-[#43A9C3] shadow-sm backdrop-blur-xl">
+                  <PlayCircle size={19} />
+                </div>
+                <div>
+                  <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Kuis Tersedia
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-[#94A3B8]">
+                    Kuis yang siap kamu kerjakan sekarang
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {availableQuizzes.length === 0 ? (
+                <div className="col-span-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white dark:bg-[#0F172A]/60 p-6 text-center text-sm text-slate-500 dark:text-[#94A3B8] backdrop-blur-xl">
+                  Tidak ada kuis yang tersedia saat ini.
+                </div>
+              ) : (
+                availableQuizzes.map((quiz) => (
+                  <div key={quiz.id} className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white dark:bg-[#0F172A]/60 p-5 shadow-lg backdrop-blur-xl transition hover:border-[#4285D4]/50">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="rounded-full bg-slate-50 dark:bg-white/5 px-2.5 py-1 text-[10px] font-bold text-[#4285D4]">
+                        {quiz.subjects?.nama || 'Tanpa Mapel'}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-[#94A3B8]">{quiz.durasi} Menit</span>
+                    </div>
+                    <h3 className="mb-1 text-base font-bold text-slate-900 dark:text-white">{quiz.deskripsi || 'Tanpa Judul'}</h3>
+                    <p className="mb-4 text-xs font-medium text-slate-500 dark:text-[#94A3B8]">Level: {quiz.kesulitan}</p>
+                    <button 
+                      onClick={() => navigate('/student/quiz', { state: { quizId: quiz.id } })}
+                      className="w-full rounded-xl bg-[#4285D4] py-2.5 text-[12px] font-bold text-slate-900 dark:text-white transition hover:bg-[#3171BC]"
+                    >
+                      Mulai Kuis
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* =====================================================
               MASTERY HEADER
           ====================================================== */}
 
@@ -592,8 +765,8 @@ export default function Dashboard() {
                     justify-center
                     rounded-[14px]
                     border
-                    border-white/80
-                    bg-white/55
+                    border-slate-200 dark:border-white/10
+                    bg-white dark:bg-white dark:bg-[#0F172A]/60
                     text-[#43A9C3]
                     shadow-sm
                     backdrop-blur-xl
@@ -604,11 +777,11 @@ export default function Dashboard() {
 
                 <div>
 
-                  <h2 className="text-[19px] font-extrabold tracking-tight text-[#174A66]">
+                  <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 dark:text-white">
                     Peta mastery CP / TP
                   </h2>
 
-                  <p className="mt-0.5 text-xs text-[#7C929F]">
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-[#94A3B8]">
                     Pantau perkembangan kemampuanmu
                   </p>
 
@@ -618,14 +791,15 @@ export default function Dashboard() {
 
               <button
                 type="button"
+                onClick={() => navigate('/student/materials')}
                 className="
                   hidden
                   items-center
                   gap-1
                   rounded-xl
                   border
-                  border-white/80
-                  bg-white/50
+                  border-slate-200 dark:border-white/10
+                  bg-white dark:bg-white dark:bg-[#0F172A]/60
                   px-3
                   py-2
                   text-[11px]
@@ -634,7 +808,7 @@ export default function Dashboard() {
                   shadow-sm
                   backdrop-blur-xl
                   transition-all
-                  hover:bg-white/75
+                  hover:bg-slate-50 dark:bg-white/5
                   sm:flex
                 "
               >
@@ -654,8 +828,8 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[28px]
                 border
-                border-white/80
-                bg-white/50
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-5
                 shadow-[0_15px_40px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
@@ -683,11 +857,11 @@ export default function Dashboard() {
 
                   <div>
 
-                    <h3 className="text-sm font-bold text-[#285E76]">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       Perkembangan kompetensi
                     </h3>
 
-                    <p className="mt-1 text-xs text-[#7E939F]">
+                    <p className="mt-1 text-xs text-slate-400 dark:text-[#64748B]">
                       Area belajar berdasarkan tingkat penguasaan.
                     </p>
 
@@ -701,8 +875,8 @@ export default function Dashboard() {
                       gap-1.5
                       rounded-full
                       border
-                      border-[#C6EAF2]
-                      bg-[#EAF9FC]
+                      border-slate-200 dark:border-white/10
+                      bg-slate-50 dark:bg-white/5
                       px-3
                       py-1.5
                       text-[10px]
@@ -716,140 +890,12 @@ export default function Dashboard() {
 
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-
-                  {/* CP 3.1 */}
-
-                  <div
-                    className="
-                      group/item
-                      rounded-[18px]
-                      border
-                      border-white/80
-                      bg-white/45
-                      p-4
-                      transition-all
-                      duration-300
-                      hover:-translate-y-0.5
-                      hover:bg-white/70
-                    "
-                  >
-
-                    <div className="flex items-center justify-between">
-
-                      <span className="text-xs font-bold text-[#557D8D]">
-                        CP 3.1
-                      </span>
-
-                      <span className="text-xs font-extrabold text-[#4C9A6A]">
-                        90%
-                      </span>
-
-                    </div>
-
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#E6F3EC]">
-
-                      <div className="h-full w-[90%] rounded-full bg-[#73CFA0]" />
-
-                    </div>
-
-                    <div className="mt-2 flex items-center gap-1.5">
-
-                      <CheckCircle2
-                        size={12}
-                        className="text-[#55A574]"
-                      />
-
-                      <p className="text-[10px] font-semibold text-[#57946E]">
-                        Mastered
-                      </p>
-
-                    </div>
-
+                <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/5 py-12 text-center">
+                  <div className="mb-3 rounded-full bg-slate-50 dark:bg-white/5 p-3 text-slate-400 dark:text-[#64748B]">
+                    <Sparkles size={24} />
                   </div>
-
-                  {/* CP 3.2 */}
-
-                  <div
-                    className="
-                      group/item
-                      rounded-[18px]
-                      border
-                      border-white/80
-                      bg-white/45
-                      p-4
-                      transition-all
-                      duration-300
-                      hover:-translate-y-0.5
-                      hover:bg-white/70
-                    "
-                  >
-
-                    <div className="flex items-center justify-between">
-
-                      <span className="text-xs font-bold text-[#557D8D]">
-                        CP 3.2
-                      </span>
-
-                      <span className="text-xs font-extrabold text-[#C49634]">
-                        72%
-                      </span>
-
-                    </div>
-
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F8F0D9]">
-
-                      <div className="h-full w-[72%] rounded-full bg-[#EAC363]" />
-
-                    </div>
-
-                    <p className="mt-2 text-[10px] font-semibold text-[#AA8838]">
-                      Perlu latihan
-                    </p>
-
-                  </div>
-
-                  {/* CP 3.3 */}
-
-                  <div
-                    className="
-                      group/item
-                      rounded-[18px]
-                      border
-                      border-white/80
-                      bg-white/45
-                      p-4
-                      transition-all
-                      duration-300
-                      hover:-translate-y-0.5
-                      hover:bg-white/70
-                    "
-                  >
-
-                    <div className="flex items-center justify-between">
-
-                      <span className="text-xs font-bold text-[#557D8D]">
-                        CP 3.3
-                      </span>
-
-                      <span className="text-xs font-extrabold text-[#CC7180]">
-                        54%
-                      </span>
-
-                    </div>
-
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#F9E8EC]">
-
-                      <div className="h-full w-[54%] rounded-full bg-[#E58A99]" />
-
-                    </div>
-
-                    <p className="mt-2 text-[10px] font-semibold text-[#C36D7C]">
-                      Prioritas belajar
-                    </p>
-
-                  </div>
-
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Belum Ada Pemetaan Kompetensi</h4>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-[#94A3B8]">Kerjakan kuis untuk melihat area mana yang sudah kamu kuasai.</p>
                 </div>
 
               </div>
@@ -873,15 +919,15 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[28px]
                 border
-                border-white/80
-                bg-white/50
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-5
                 shadow-[0_15px_40px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:bg-white/65
+                hover:bg-slate-50 dark:bg-white/5
               "
             >
 
@@ -895,7 +941,7 @@ export default function Dashboard() {
                     items-center
                     justify-center
                     rounded-[14px]
-                    bg-[#E8F9FC]
+                    bg-slate-50 dark:bg-white/5
                     text-[#45A9C2]
                   "
                 >
@@ -904,11 +950,11 @@ export default function Dashboard() {
 
                 <div>
 
-                  <h3 className="text-sm font-extrabold text-[#174A66]">
+                  <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
                     Mastery Map
                   </h3>
 
-                  <p className="text-[10px] text-[#8195A1]">
+                  <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">
                     Visualisasi perkembangan belajar
                   </p>
 
@@ -922,19 +968,19 @@ export default function Dashboard() {
                   className="
                     rounded-[17px]
                     border
-                    border-[#D3EEE2]
-                    bg-[#F0FAF5]
+                    border-[#22C55E]/20
+                    bg-[#22C55E]/10
                     p-4
                     text-center
                     transition-all
                     hover:-translate-y-0.5
                   "
                 >
-                  <p className="text-2xl font-extrabold text-[#4B9B70]">
-                    8
+                  <p className="text-2xl font-extrabold text-[#22C55E]">
+                    0
                   </p>
 
-                  <p className="mt-1 text-[10px] font-semibold text-[#729383]">
+                  <p className="mt-1 text-[10px] font-semibold text-[#4ADE80]">
                     Mastered
                   </p>
                 </div>
@@ -943,19 +989,19 @@ export default function Dashboard() {
                   className="
                     rounded-[17px]
                     border
-                    border-[#F0E5BF]
-                    bg-[#FFFAEA]
+                    border-[#F59E0B]/20
+                    bg-[#F59E0B]/10
                     p-4
                     text-center
                     transition-all
                     hover:-translate-y-0.5
                   "
                 >
-                  <p className="text-2xl font-extrabold text-[#C39A3A]">
-                    4
+                  <p className="text-2xl font-extrabold text-[#F59E0B]">
+                    0
                   </p>
 
-                  <p className="mt-1 text-[10px] font-semibold text-[#9C8956]">
+                  <p className="mt-1 text-[10px] font-semibold text-[#FBBF24]">
                     Progress
                   </p>
                 </div>
@@ -964,19 +1010,19 @@ export default function Dashboard() {
                   className="
                     rounded-[17px]
                     border
-                    border-[#F1DCE1]
-                    bg-[#FFF3F5]
+                    border-[#EF4444]/20
+                    bg-[#EF4444]/10
                     p-4
                     text-center
                     transition-all
                     hover:-translate-y-0.5
                   "
                 >
-                  <p className="text-2xl font-extrabold text-[#C96F7E]">
-                    2
+                  <p className="text-2xl font-extrabold text-[#EF4444]">
+                    0
                   </p>
 
-                  <p className="mt-1 text-[10px] font-semibold text-[#A18188]">
+                  <p className="mt-1 text-[10px] font-semibold text-[#F87171]">
                     Fokus
                   </p>
                 </div>
@@ -994,15 +1040,15 @@ export default function Dashboard() {
                 overflow-hidden
                 rounded-[28px]
                 border
-                border-white/80
-                bg-white/50
+                border-slate-200 dark:border-white/10
+                bg-white dark:bg-white dark:bg-[#0F172A]/60
                 p-5
                 shadow-[0_15px_40px_rgba(63,130,155,0.08)]
                 backdrop-blur-2xl
                 transition-all
                 duration-300
                 hover:-translate-y-1
-                hover:bg-white/65
+                hover:bg-slate-50 dark:bg-white/5
               "
             >
 
@@ -1018,8 +1064,8 @@ export default function Dashboard() {
                       items-center
                       justify-center
                       rounded-[14px]
-                      bg-[#F0ECFF]
-                      text-[#8066CC]
+                      bg-slate-50 dark:bg-white/5
+                      text-[#A78BFA]
                     "
                   >
                     <Sparkles size={18} />
@@ -1027,11 +1073,11 @@ export default function Dashboard() {
 
                   <div>
 
-                    <h3 className="text-sm font-extrabold text-[#174A66]">
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
                       Rekomendasi Quiz
                     </h3>
 
-                    <p className="text-[10px] text-[#8195A1]">
+                    <p className="text-[10px] text-slate-500 dark:text-[#94A3B8]">
                       Latihan yang sesuai denganmu
                     </p>
 
@@ -1044,10 +1090,10 @@ export default function Dashboard() {
                   className="
                     rounded-xl
                     p-2
-                    text-[#78929F]
+                    text-slate-500 dark:text-[#94A3B8]
                     transition
-                    hover:bg-white/70
-                    hover:text-[#4B8195]
+                    hover:bg-slate-50 dark:bg-white/5
+                    hover:text-slate-900 dark:text-white
                   "
                 >
                   <ArrowUpRight size={16} />
@@ -1060,12 +1106,12 @@ export default function Dashboard() {
                   mt-5
                   rounded-[19px]
                   border
-                  border-white/80
-                  bg-white/45
+                  border-slate-200 dark:border-white/10
+                  bg-slate-50 dark:bg-white/5
                   p-4
                   transition-all
                   duration-300
-                  hover:bg-white/65
+                  hover:bg-slate-50 dark:bg-white/5
                 "
               >
 
@@ -1073,60 +1119,33 @@ export default function Dashboard() {
 
                   <div>
 
-                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#8A9BA5]">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-[#94A3B8]">
                       Prioritas
                     </p>
 
-                    <h4 className="mt-1 text-sm font-bold text-[#285E76]">
-                      Pemahaman Konsep
+                    <h4 className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+                      Belum Ada Rekomendasi
                     </h4>
 
                   </div>
 
-                  <span
-                    className="
-                      rounded-full
-                      border
-                      border-[#F1D8DE]
-                      bg-[#FFF0F3]
-                      px-2.5
-                      py-1
-                      text-[10px]
-                      font-bold
-                      text-[#C36D7C]
-                    "
-                  >
-                    54%
-                  </span>
-
                 </div>
 
-                <p className="mt-2 text-xs leading-5 text-[#7C929E]">
-                  Latihan dipilih berdasarkan area yang masih
-                  perlu kamu kuasai.
+                <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-[#94A3B8]">
+                  Selesaikan kuis untuk mendapatkan rekomendasi AI.
                 </p>
 
                 <button
                   type="button"
                   className="
                     mt-4
-                    flex
                     w-full
-                    items-center
-                    justify-center
-                    gap-2
-                    rounded-[13px]
-                    bg-[#72CFE4]
+                    rounded-xl
+                    bg-slate-50 dark:bg-white/5
                     py-2.5
                     text-xs
                     font-bold
-                    text-white
-                    shadow-[0_8px_20px_rgba(77,177,203,0.20)]
-                    transition-all
-                    duration-300
-                    hover:-translate-y-0.5
-                    hover:bg-[#5DC4DB]
-                    hover:shadow-[0_12px_25px_rgba(77,177,203,0.28)]
+                    text-slate-900 dark:text-white
                   "
                 >
                   Mulai Quiz
